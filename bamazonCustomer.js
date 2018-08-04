@@ -35,7 +35,7 @@ function showItems()
 {
     var itemArray = [];
     console.log('\033c');
-    console.log("bAmazon Ordering System\n".bold);
+    console.log("bAmazon Ordering System\n".bold.underline);
 
     connection.query("SELECT * FROM products ORDER BY dept_name, product_name", function(error, response) 
     {
@@ -52,6 +52,7 @@ function showItems()
 
         inquirer.prompt([
         {
+            pageSize: 20,
             type: "list",
             name: "stuff",
             message: "What would you like to purchase? ",
@@ -211,7 +212,7 @@ function loopIt()
                 }
                 // Show everything the customer ordered;
                 console.log('\033c');
-                console.log("bAmazon Ordering System\n".bold);
+                console.log("bAmazon Ordering System\n".bold.underline);
                 console.log("\nOrder summary:\n".bold)
                 console.table(response);
                 console.log("\nTotal: $".bold, colors.blue.bold(total));

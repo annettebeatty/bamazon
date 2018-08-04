@@ -25,7 +25,7 @@ connection.connect(function(err)
 function showItems()
 {
     console.log('\033c');
-    console.log("bAmazon Manager Main Menu\n".bold);
+    console.log("bAmazon Manager Main Menu\n".bold.underline);
 
     inquirer.prompt([
     {
@@ -159,6 +159,7 @@ function addInventory(query)
 
         inquirer.prompt([
         {
+            pageSize: 20,
             type: "list",
             name: "stuff",
             message: "Select item to add inventory: ",
