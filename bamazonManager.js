@@ -25,7 +25,7 @@ connection.connect(function(err)
 function showItems()
 {
     console.log('\033c');
-    console.log("bAmazon Manager Main Menu\n".bold.underline);
+    console.log("bAmazon Manager Main Menu\n".bold.inverse);
 
     inquirer.prompt([
     {
@@ -246,7 +246,7 @@ function addProducts()
     inquirer.prompt([
     {
         name: "item_id",
-        message: "Enter 10 digit item-id: ",
+        message: "\nEnter 10 digit item-id: ",
         validate: function validateItem(name)
         {
             return name.length == 10 || "Item-id must be 10-digits"
@@ -297,7 +297,7 @@ function addProducts()
 
             if (response.length == 0)
             {
-                console.log("Department %s doesn't exist.  Re-enter data.", answer.dept_name);
+                console.log("\nDepartment %s doesn't exist.  Re-enter data.", answer.dept_name);
                 addProducts();
             }
             else
@@ -313,7 +313,7 @@ function addProducts()
                         insertNewProduct(answer)
                     else
                     { 
-                        console.log("Duplicate item-id.  Re-enter data.");
+                        console.log("\nThis item-id already exists.  Re-enter data.");
                         addProducts();
                     }
                 });

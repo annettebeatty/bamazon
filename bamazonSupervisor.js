@@ -24,7 +24,7 @@ connection.connect(function(err)
 function showItems()
 {
     console.log('\033c');
-    console.log("bAmazon Supervisor Main Menu\n".bold.underline);
+    console.log("bAmazon Supervisor Main Menu\n".bold.inverse);
 
     inquirer.prompt([
     {

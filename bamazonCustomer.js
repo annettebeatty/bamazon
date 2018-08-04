@@ -35,7 +35,7 @@ function showItems()
 {
     var itemArray = [];
     console.log('\033c');
-    console.log("bAmazon Ordering System\n".bold.underline);
+    console.log("bAmazon Ordering System\n".bold.inverse);
 
     connection.query("SELECT * FROM products ORDER BY dept_name, product_name", function(error, response) 
     {
@@ -212,7 +212,7 @@ function loopIt()
                 }
                 // Show everything the customer ordered;
                 console.log('\033c');
-                console.log("bAmazon Ordering System\n".bold.underline);
+                console.log("bAmazon Ordering System\n".bold.inverse);
                 console.log("\nOrder summary:\n".bold)
                 console.table(response);
                 console.log("\nTotal: $".bold, colors.blue.bold(total));
