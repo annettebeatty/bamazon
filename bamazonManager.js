@@ -1,6 +1,7 @@
-var inquirer = require("inquirer");
+const inquirer = require("inquirer");
 const mysql = require("mysql");
-const cTable = require('console.table');
+const cTable = require("console.table");
+const colors = require("colors");
 
 const connection = mysql.createConnection
 ({
@@ -23,12 +24,15 @@ connection.connect(function(err)
 // Each option will call the specific function which processes the request
 function showItems()
 {
+    console.log('\033c');
+    console.log("bAmazon Manager Main Menu\n".bold);
 
     inquirer.prompt([
     {
         type: "list",
         name: "choice",
-        choices: ["View Products for Sale", "View Low Inventory", "Add to Inventory", "Add New Product"]
+        message: "Choose a menu item",
+        choices: ["View Products for Sale", "View Low Inventory", "Add to Inventory", "Add New Product", "Quit"]
     }
     ]).then(function(answer) 
     {
@@ -53,13 +57,20 @@ function showItems()
 
             case "Add to Inventory":
             {
-                addInventory();
+                let queryIt = "SELECT * FROM products"
+                addInventory(queryIt);
                 break;
             }
 
             case "Add New Product":
             {
                 addProducts();
+                break;
+            }
+
+            case "Quit":
+            {
+                connection.end();
                 break;
             }
         }
@@ -70,14 +81,17 @@ function showItems()
 // to the manager
 function viewProducts()
 {
-    console.log("Show products");
+
+    //connection.query("SELECT item_id, SUBSTRING(`product_name`, 1,40) product_name, price, stock_quantity FROM products", function(error, response) 
     connection.query("SELECT item_id, product_name, price, stock_quantity FROM products", function(error, response) 
     {
         if (error) 
             throw error;
+
+        console.log("\n");
         console.table(response);
 
-        connection.end();
+        loopIt();
     });
 }
 
@@ -90,23 +104,46 @@ function viewInventory()
         if (error) 
             throw error;
 
-        if (response.length == 0)
-            console.log("No products with low inventory");
-        else 
-            console.table(response);
+        console.log("\n");
 
-        connection.end();
+        if (response.length == 0)
+        {
+
+            console.log("No products with low inventory");
+            loopIt();
+        }
+        else 
+        {
+            console.table(response);
+            inquirer.prompt([
+            {
+                type: "confirm",
+                message: "\nAdd inventory?: ",
+                name: "confirm",
+                default: true
+            }
+            ]).then(function(qtyresponse) 
+            {
+                if (qtyresponse.confirm)
+                {
+                    let queryIt = "SELECT item_id, product_name, price, stock_quantity FROM products WHERE stock_quantity < 5"
+                    addInventory(queryIt);
+                } 
+                else
+                    loopIt();
+            });
+        }
     });
 }
 
 // This function shows the manager all the products so they can pick
 // which one they want to add inventory to
-function addInventory()
+function addInventory(query)
 {
     var itemArray = [];
 
     // Grab all the products
-    connection.query("SELECT * FROM products", function(error, response) 
+    connection.query(query, function(error, response) 
     {
         if (error) 
             throw error;
@@ -156,7 +193,7 @@ function addInventory()
                     processItem(qtyresponse.quantity, answer, response);
                 } 
                 else
-                    connection.end();
+                    loopIt();
             });
         });
     });
@@ -193,7 +230,7 @@ function processItem(qty, answer, response)
 
         // console.log(res.affectedRows + " offer updated!\n");
         console.log("UPDATED: ", response[id-1].item_id + " - " + response[id-1].product_name + " - $" + response[id-1].price + " - " + newqty);
-        connection.end();
+        loopIt();
       }
     );
   
@@ -302,7 +339,46 @@ function insertNewProduct(answer)
 
             console.log(res.affectedRows + " product added!\n");
             console.log("Added Product: ", answer.item_id + " - " + answer.prod_name + " - " + answer.dept_name + " - $" + answer.price + " Inventory: " + answer.stock_qty);
-            connection.end();
+
+            // Since they're adding products, give them the choice to keep
+            // adding more product versus going back to the main menu
+            inquirer.prompt([
+            {
+                type: "confirm",
+                message: "\nAdd another product?: ",
+                name: "confirm",
+                default: true
+            }
+            ]).then(function(response) 
+            {
+                if (response.confirm)
+                {
+                    addProducts();
+                } 
+                else
+                    loopIt();
+            });
         }
     );
+}
+
+// This function will loop back to the main menu
+function loopIt()
+{
+    inquirer.prompt([
+    {
+        type: "confirm",
+        message: "\nBack to main menu?: ",
+        name: "confirm",
+        default: true
+    }
+    ]).then(function(qtyresponse) 
+    {
+        if (qtyresponse.confirm)
+        {
+            showItems();
+        } 
+        else
+            connection.end();
+    });
 }

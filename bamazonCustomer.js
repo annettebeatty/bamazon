@@ -1,5 +1,7 @@
-var inquirer = require("inquirer");
+const inquirer = require("inquirer");
 const mysql = require("mysql");
+const cTable = require("console.table");
+const colors = require("colors");
 
 const connection = mysql.createConnection
 ({
@@ -32,6 +34,8 @@ connection.connect(function(err)
 function showItems()
 {
     var itemArray = [];
+    console.log('\033c');
+    console.log("bAmazon Ordering System\n".bold);
 
     connection.query("SELECT * FROM products ORDER BY dept_name, product_name", function(error, response) 
     {
@@ -82,6 +86,8 @@ function showItems()
                     // console.log("Answer ", answer,"Quantity ", qtyresponse.quantity);
                     processItem(qtyresponse.quantity, answer, response);
                 } 
+                else
+                    loopIt();
             });
         });
     });
@@ -109,7 +115,7 @@ function processItem(qty, answer, dbResponse)
     else
     {        
         console.log("Sorry, inventory too low");
-        connection.end();
+        loopIt();
     }
 }
 
@@ -139,7 +145,8 @@ function updateInventory(dbResponse, orderQty) {
       function(err, res) {
         // console.log(res.affectedRows + " offer updated!\n");
         showCustomer(orderQty, dbResponse);
-        connection.end();
+
+        loopIt();
       }
     );
   
@@ -152,5 +159,75 @@ function showCustomer(qty, dbResponse)
 {
     var totPrice = dbResponse.price * qty;
     totPrice = parseFloat(Math.round(totPrice * 100) / 100).toFixed(2);
-    console.log("Total Bill: Qty - ", qty, "Total Cost - $", totPrice, " Product -", dbResponse.product_name);
+    console.log("Total: Qty - ", qty, "Total Cost - $", totPrice, " Product -", dbResponse.product_name);
+
+    // Save order for an ending summary
+
+    var query = connection.query(
+        "INSERT INTO orders SET ?",
+        {
+            qty: qty,
+            total_price: totPrice,
+            product: dbResponse.product_name
+        },
+        function(err, res) 
+        {
+            if (err) 
+                throw err;
+
+            //loopIt();
+        }
+    );
 }
+
+
+// This function will loop back to pick more items
+function loopIt()
+{
+    inquirer.prompt([
+    {
+        type: "confirm",
+        message: "\nOrder another item?: ",
+        name: "confirm",
+        default: true
+    }
+    ]).then(function(qtyresponse) 
+    {
+        if (qtyresponse.confirm)
+        {
+            showItems();
+        } 
+        else
+        {
+            var query = connection.query("SELECT * FROM orders", function(error, response) 
+            {
+                if (error) 
+                    throw error;
+                
+                let total = 0;
+                for (var i = 0; i < response.length; i++)
+                {
+                    total += response[i].total_price;
+                }
+                // Show everything the customer ordered;
+                console.log('\033c');
+                console.log("bAmazon Ordering System\n".bold);
+                console.log("\nOrder summary:\n".bold)
+                console.table(response);
+                console.log("\nTotal: $".bold, colors.blue.bold(total));
+                console.log("\nThank you for your business!\n")
+
+                // clean up order table
+                var query = connection.query("TRUNCATE TABLE orders", function(error, response) 
+                {
+                    if (error) 
+                        throw error;
+
+                    connection.end();
+                });
+         });
+        }
+
+    });
+}
+

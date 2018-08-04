@@ -4,6 +4,12 @@ CREATE DATABASE bamazonDB;
 
 USE bamazonDB;
 
+CREATE TABLE orders (
+  qty DECIMAL(10) NOT NULL,
+  total_price DECIMAL(12,2) NOT NULL,
+  product VARCHAR (80) NOT NULL
+);
+
 CREATE TABLE departments (
   dept_id CHAR(5) NOT NULL,
   dept_name VARCHAR(50) NOT NULL,
@@ -73,3 +79,9 @@ SELECT * FROM departments;
 
 SELECT dept_id, dept_name, overhead_cost,  SUM(product_sales) product_sales, (SUM(product_sales) - overhead_cost) total_profit FROM departments
 LEFT JOIN products USING (dept_name) GROUP BY dept_id ORDER by dept_id
+
+SELECT item_id, product_name, dept_name, price, stock_quantity, product_sales FROM products ORDER BY dept_name
+
+SELECT * FROM products ORDER BY  product_sales DESC
+
+SELECT item_id, product_name, price, stock_quantity FROM products WHERE stock_quantity < 5

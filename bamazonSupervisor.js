@@ -1,6 +1,7 @@
-var inquirer = require("inquirer");
+const inquirer = require("inquirer");
 const mysql = require("mysql");
 const cTable = require('console.table');
+const colors = require("colors");
 
 const connection = mysql.createConnection
 ({
@@ -19,19 +20,18 @@ connection.connect(function(err)
     showItems();
 });
 
-// Logic
-// Show menu options
-// * View Product Sales by Department   
-// * Create New Department
-
+// Show list of choices for the supervisor
 function showItems()
 {
+    console.log('\033c');
+    console.log("bAmazon Supervisor Main Menu\n".bold);
 
     inquirer.prompt([
     {
         type: "list",
         name: "choice",
-        choices: ["View Product Sales by Department", "Create New Department"]
+        message: "Choose a menu item",
+        choices: ["View Product Sales by Department", "View Top Product Sales by Item", "Create New Department", "Quit"]
     }
     ]).then(function(answer) 
     {
@@ -48,15 +48,28 @@ function showItems()
                 break;
             }
 
+            case "View Top Product Sales by Item":
+            {
+                viewTopSales();
+                break;
+            }
+
             case "Create New Department":
             {
                 createDept();
+                break;
+            }
+
+            case "Quit":
+            {
+                connection.end();
                 break;
             }
         }
     });
 }
 
+// This pulls the data from the database and shows it to the user
 function viewProducts()
 {
     var queryIt = "SELECT dept_id, dept_name, overhead_cost,  SUM(product_sales) product_sales, (SUM(product_sales) - overhead_cost) total_profit FROM departments LEFT JOIN products USING (dept_name) GROUP BY dept_id ORDER by dept_id"
@@ -66,11 +79,30 @@ function viewProducts()
         if (error) 
             throw error;
         //console.log(response);
+        console.log("\n");
         console.table(response);
-        connection.end();
+        loopIt();
     });
 }
 
+// This pulls the data from the database and shows it to the user
+function viewTopSales()
+{
+    var queryIt = "SELECT * FROM products ORDER BY  product_sales DESC"
+
+    var query = connection.query(queryIt, function(error, response) 
+    {
+        if (error) 
+            throw error;
+        //console.log(response);
+        console.log("\n");
+        console.table(response);
+        loopIt();
+    });
+}
+
+// This function will take the user input for a new department and 
+// stuff it into the database
 function createDept()
 {
     // dept_id, dept_name, overhead_cost
@@ -113,8 +145,29 @@ function createDept()
 
                 console.log(res.affectedRows + " department added!\n");
                 console.log("Added Department: ", answer.dept_id + " - " + answer.dept_name + " - " + "Overhead: " + answer.overhead);
-                connection.end();
+                loopIt();
             }
         );
     });  
+}
+
+// This function will loop back to the main menu
+function loopIt()
+{
+    inquirer.prompt([
+    {
+        type: "confirm",
+        message: "\nBack to main menu?: ",
+        name: "confirm",
+        default: true
+    }
+    ]).then(function(qtyresponse) 
+    {
+        if (qtyresponse.confirm)
+        {
+            showItems();
+        } 
+        else
+            connection.end();
+    });
 }
