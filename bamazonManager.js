@@ -1,5 +1,6 @@
 var inquirer = require("inquirer");
 const mysql = require("mysql");
+const cTable = require('console.table');
 
 const connection = mysql.createConnection
 ({
@@ -18,13 +19,8 @@ connection.connect(function(err)
     showItems();
 });
 
-// Logic
-// Show menu options
-// * View Products for Sale   
-// * View Low Inventory
-// * Add to Inventory
-// * Add New Product
-
+// This function will show the options for the manager to select
+// Each option will call the specific function which processes the request
 function showItems()
 {
 
@@ -70,47 +66,46 @@ function showItems()
     });
 }
 
+// This function will show all the available products
+// to the manager
 function viewProducts()
 {
     console.log("Show products");
-    connection.query("SELECT * FROM products", function(error, response) 
+    connection.query("SELECT item_id, product_name, price, stock_quantity FROM products", function(error, response) 
     {
         if (error) 
             throw error;
-    
-        for (var i=0; i < response.length; i++)
-        {
-            // Need to show ID, name and price
-            console.log(response[i].item_id + " - " + response[i].product_name + " - $" + response[i].price + " - " + response[i].stock_quantity);
-        }
+        console.table(response);
 
         connection.end();
     });
 }
 
+// This function will show all the products with low inventory
 function viewInventory()
 {
-    console.log("Show products");
-    connection.query("SELECT * FROM products", function(error, response) 
+    //console.log("Show products");
+    connection.query("SELECT item_id, product_name, price, stock_quantity FROM products WHERE stock_quantity < 5", function(error, response) 
     {
         if (error) 
             throw error;
-    
-        for (var i=0; i < response.length; i++)
-        {
-            // Only show low stock
-            if (response[i].stock_quantity < 5)
-                console.log(response[i].item_id + " - " + response[i].product_name + " - $" + response[i].price + " - " + response[i].stock_quantity);
-        }
+
+        if (response.length == 0)
+            console.log("No products with low inventory");
+        else 
+            console.table(response);
 
         connection.end();
     });
 }
 
+// This function shows the manager all the products so they can pick
+// which one they want to add inventory to
 function addInventory()
 {
     var itemArray = [];
 
+    // Grab all the products
     connection.query("SELECT * FROM products", function(error, response) 
     {
         if (error) 
@@ -118,6 +113,7 @@ function addInventory()
 
         // console.log(response);
         
+        // Push these in an array we can use for the inquirer
         for (var i=0; i < response.length; i++)
         {
             // Need to show ID, name and price
@@ -133,13 +129,17 @@ function addInventory()
         }
         ]).then(function(answer) 
         {
-            // Now we process it
+            // Now we prompt the user and process it
             // console.log("Picked ", answer.stuff);
-
             inquirer.prompt([
             {
                 name: "quantity",
                 message: "Quantity to add? ",
+                validate: function validateQty(name)
+                {
+                    var reg = /^\d+$/;
+                    return reg.test(name) || "Qty must be a positive whole number!";
+                }
             },
             {
                 type: "confirm",
@@ -155,11 +155,14 @@ function addInventory()
                     // console.log("Answer ", answer,"Quantity ", qtyresponse.quantity);
                     processItem(qtyresponse.quantity, answer, response);
                 } 
+                else
+                    connection.end();
             });
         });
     });
 }
 
+// Process the updating of inventory 
 function processItem(qty, answer, response)
 {
     qty = parseInt(qty);
@@ -170,9 +173,10 @@ function processItem(qty, answer, response)
     
     id = parseInt(id);
 
-    // update inventory
+    // Calculate the new inventory number
     var newqty = response[id-1].stock_quantity + qty;
 
+    // Update the database
     var query = connection.query(
       "UPDATE products SET ? WHERE ?",
       [
@@ -197,50 +201,108 @@ function processItem(qty, answer, response)
    // console.log(query.sql);
 }
 
+// This function will add new products to the database
 function addProducts()
 {
-    // item_id, product_name, dept_name, price, stock_quantity
+    // Ask user for item_id, product_name, dept_name, price, stock_quantity
     inquirer.prompt([
     {
         name: "item_id",
         message: "Enter 10 digit item-id: ",
+        validate: function validateItem(name)
+        {
+            return name.length == 10 || "Item-id must be 10-digits"
+        }
     },
     {
         name: "prod_name",
         message: "Enter Product Name:  ",
+        validate: function validateProdName(name)
+        {
+            return name !== '' || "Must enter a product name"
+        }
     },
     {
         name: "dept_name",
         message: "Enter Department Name: ",
+        validate: function validateDeptName(name)
+        {
+            return name !== '' || "Must enter a department name"
+        }
     },
     {
         name: "price",
         message: "Enter Price $",
+        validate: function validatePrice(name)
+        {
+            var reg = /^\d+(\.\d{1,2})?$/;
+            return reg.test(name) || "Price not valid!!";
+        }
     },
     {
         name: "stock_qty",
         message: "Enter beginning stock quantity: ",
+        validate: function validateStock(name)
+        {
+            var reg = /^\d+$/;
+            return reg.test(name) || "Stock should be a postive whole number!";
+        }
     },
     ]).then(function(answer) 
     {
-        var query = connection.query(
-            "INSERT INTO products SET ?",
-            {
-                item_id: answer.item_id,
-                product_name: answer.prod_name,
-                dept_name: answer.dept_name,
-                price: answer.price,
-                stock_quantity: answer.stock_qty
-            },
-            function(err, res) {
-                if (err) 
-                    throw err;
+        // Check to see if this department exists
+        var queryIt = "SELECT * FROM departments WHERE dept_name = '" + answer.dept_name + "'";
+        var query = connection.query(queryIt, function(error, response) 
+        {
+            if (error) 
+                throw error;
 
-                console.log(res.affectedRows + " product added!\n");
-                console.log("Added Product: ", answer.item_id + " - " + answer.prod_name + " - " + answer.dept_name + " - $" + answer.price + " Inventory: " + answer.stock_qty);
-                connection.end();
+            if (response.length == 0)
+            {
+                console.log("Department %s doesn't exist.  Re-enter data.", answer.dept_name);
+                addProducts();
             }
-          );
-    
+            else
+            {
+                // Check if duplicate product
+                var queryIt = "SELECT * FROM products WHERE item_id = '" + answer.item_id + "'";
+                var query = connection.query(queryIt, function(error, dupResponse) 
+                {
+                    if (error) 
+                        throw error
+                
+                    if (dupResponse.length == 0)
+                        insertNewProduct(answer)
+                    else
+                    { 
+                        console.log("Duplicate item-id.  Re-enter data.");
+                        addProducts();
+                    }
+                });
+            }
+        });
     });
+}
+
+// Once we've checked to make sure the data is good, we'll add the new product into the database
+function insertNewProduct(answer)
+{
+    var query = connection.query(
+        "INSERT INTO products SET ?",
+        {
+            item_id: answer.item_id,
+            product_name: answer.prod_name,
+            dept_name: answer.dept_name,
+            price: answer.price,
+            stock_quantity: answer.stock_qty
+        },
+        function(err, res) {
+            if (err) 
+                throw err;
+
+            console.log(res.affectedRows + " product added!\n");
+            console.log("Added Product: ", answer.item_id + " - " + answer.prod_name + " - " + answer.dept_name + " - $" + answer.price + " Inventory: " + answer.stock_qty);
+            connection.end();
+        }
+    );
 }

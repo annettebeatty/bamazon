@@ -66,8 +66,7 @@ function viewProducts()
         if (error) 
             throw error;
         //console.log(response);
-        console.table(response
-        );
+        console.table(response);
         connection.end();
     });
 }
@@ -76,38 +75,46 @@ function createDept()
 {
     // dept_id, dept_name, overhead_cost
     inquirer.prompt([
+    {
+        name: "dept_id",
+        message: "Enter 5 digit Department ID: ",
+        validate: function validateStock(name)
         {
-            name: "dept_id",
-            message: "Enter 5 digit Department ID: ",
-        },
-        {
-            name: "dept_name",
-            message: "Enter Department Name: ",
-        },
-        {
-            name: "overhead",
-            message: "Enter Department Overhead Cost",
+            var reg = /^\d{5}$/;
+            return reg.test(name) || "Dept ID should be a 5-digit number!";
         }
-        ]).then(function(answer) 
+    },
+    {
+        name: "dept_name",
+        message: "Enter Department Name: ",
+    },
+    {
+        name: "overhead",
+        message: "Enter Department Overhead Cost",
+        validate: function validateOverhead(name)
         {
-            var query = connection.query(
-                "INSERT INTO departments SET ?",
-                {
-                    dept_id: answer.dept_id,
-                    dept_name: answer.dept_name,
-                    overhead_cost: answer.overhead
-                },
-                function(err, res) 
-                {
-                    if (err) 
-                        throw err;
-    
-                    console.log(res.affectedRows + " department added!\n");
-                    console.log("Added Department: ", answer.dept_id + " - " + answer.dept_name + " - " + "Overhead: " + answer.overhead);
-                    connection.end();
-                }
-            );
-        
-        });
-    
+            var reg = /^\d+$/;
+            return reg.test(name) || "Overhead should be a whole number!";
+        }
+    }
+    ]).then(function(answer) 
+    {
+        var query = connection.query(
+            "INSERT INTO departments SET ?",
+            {
+                dept_id: answer.dept_id,
+                dept_name: answer.dept_name,
+                overhead_cost: answer.overhead
+            },
+            function(err, res) 
+            {
+                if (err) 
+                    throw err;
+
+                console.log(res.affectedRows + " department added!\n");
+                console.log("Added Department: ", answer.dept_id + " - " + answer.dept_name + " - " + "Overhead: " + answer.overhead);
+                connection.end();
+            }
+        );
+    });  
 }

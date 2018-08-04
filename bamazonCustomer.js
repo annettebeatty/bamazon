@@ -28,11 +28,12 @@ connection.connect(function(err)
 //   Update inventory
 //   Show customer total cost
 
+// This function will show the user the products in the database
 function showItems()
 {
     var itemArray = [];
 
-    connection.query("SELECT * FROM products", function(error, response) 
+    connection.query("SELECT * FROM products ORDER BY dept_name, product_name", function(error, response) 
     {
         if (error) 
             throw error;
@@ -61,6 +62,11 @@ function showItems()
             {
                 name: "quantity",
                 message: "Quantity to purchase? ",
+                validate: function validateQty(name)
+                {
+                    var reg = /^\d+$/;
+                    return reg.test(name) || "Quantity should be a whole number!";
+                }
             },
             {
                 type: "confirm",
@@ -81,6 +87,9 @@ function showItems()
     });
 }
 
+// Here's where we take the input from inquirer and map it back to the
+// product in the array which holds our database data.  Then calls
+// updateInvetory to process inventory adjustments
 function processItem(qty, answer, dbResponse)
 {
     qty = parseInt(qty);
@@ -92,7 +101,7 @@ function processItem(qty, answer, dbResponse)
     id = parseInt(id);
 
     // console.log("Ordering ", dbResponse[id-1].product_name, "Quanity in Stock ", dbResponse[id-1].stock_quantity);
-    if (qty < dbResponse[id-1].stock_quantity)
+    if (qty <= dbResponse[id-1].stock_quantity)
     {
         // update inventory
         updateInventory(dbResponse[id-1], qty);
@@ -104,7 +113,8 @@ function processItem(qty, answer, dbResponse)
     }
 }
 
-
+// This function processes the inventory adjustments and updates the database
+// It then calls the function to show the customer their order detail
 function updateInventory(dbResponse, orderQty) {
     // console.log("Updating inventory ...\n");
     // console.log(dbResponse);
@@ -137,6 +147,7 @@ function updateInventory(dbResponse, orderQty) {
    // console.log(query.sql);
 }
 
+// This function just spits out order detail to the console
 function showCustomer(qty, dbResponse)
 {
     var totPrice = dbResponse.price * qty;
