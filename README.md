@@ -32,4 +32,4 @@ This screenshot shows the supervisor menu options which provides choices that pe
 This screenshot is an example of the revenue by product.
 <img width="1028" alt="bamazon" src="./assets/images/supervisor2.png">
 
-Here's a link to the MP4 demo - https://drive.google.com/file/d/1DnCrRvY9uwf12OSFvRQbukQBG3xHpIUv/view?usp=sharing
+Here's a link to the MP4 demo - https://youtu.be/KsiNqMyfdVA
