@@ -245,6 +245,14 @@ function addProducts()
     // Ask user for item_id, product_name, dept_name, price, stock_quantity
     inquirer.prompt([
     {
+        name: "dept_name",
+        message: "Enter Department Name: ",
+        validate: function validateDeptName(name)
+        {
+            return name !== '' || "Must enter a department name"
+        }
+    },
+    {
         name: "item_id",
         message: "\nEnter 10 digit item-id: ",
         validate: function validateItem(name)
@@ -258,14 +266,6 @@ function addProducts()
         validate: function validateProdName(name)
         {
             return name !== '' || "Must enter a product name"
-        }
-    },
-    {
-        name: "dept_name",
-        message: "Enter Department Name: ",
-        validate: function validateDeptName(name)
-        {
-            return name !== '' || "Must enter a department name"
         }
     },
     {

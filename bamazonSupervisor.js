@@ -131,24 +131,62 @@ function createDept()
     }
     ]).then(function(answer) 
     {
-        var query = connection.query(
-            "INSERT INTO departments SET ?",
-            {
-                dept_id: answer.dept_id,
-                dept_name: answer.dept_name,
-                overhead_cost: answer.overhead
-            },
-            function(err, res) 
-            {
-                if (err) 
-                    throw err;
-
-                console.log(res.affectedRows + " department added!\n");
-                console.log("Added Department: ", answer.dept_id + " - " + answer.dept_name + " - " + "Overhead: " + answer.overhead);
-                loopIt();
+        // Check if duplicate department
+        var queryIt = "SELECT * FROM departments WHERE dept_id = '" + answer.dept_id + "'";
+        var query = connection.query(queryIt, function(error, dupResponse) 
+        {
+            if (error) 
+                throw error
+        
+            if (dupResponse.length == 0)
+                insertNewDepartment(answer)
+            else
+            { 
+                console.log("\nThis dept-id already exists.  Re-enter data.");
+                createDept();
             }
-        );
+        });
+
     });  
+}
+
+function insertNewDepartment(answer)
+{
+    var query = connection.query(
+        "INSERT INTO departments SET ?",
+        {
+            dept_id: answer.dept_id,
+            dept_name: answer.dept_name,
+            overhead_cost: answer.overhead
+        },
+        function(err, res) 
+        {
+            if (err) 
+                throw err;
+
+            console.log(res.affectedRows + " department added!\n");
+            console.log("Added Department: ", answer.dept_id + " - " + answer.dept_name + " - " + "Overhead: " + answer.overhead);
+
+            // Since they're adding departments, give them the choice to keep
+            // adding more product versus going back to the main menu
+            inquirer.prompt([
+                {
+                    type: "confirm",
+                    message: "\nAdd another department?: ",
+                    name: "confirm",
+                    default: true
+                }
+                ]).then(function(response) 
+                {
+                    if (response.confirm)
+                    {
+                        createDept();
+                    } 
+                    else
+                        loopIt();
+                });
+        }
+    );
 }
 
 // This function will loop back to the main menu
