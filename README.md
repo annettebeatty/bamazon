@@ -9,6 +9,7 @@ The application utilizes a centralized MySQL database which houses product data,
 ### Usage instructions
 
 Users will interact will invoke specific node applications based on their role:
+
     * `node bamazonCustomer` - Customer
     * `node bamazonManager`- Manager
     * `node bamazonSupervisor` - Supervisor
